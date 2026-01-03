@@ -1,7 +1,7 @@
 {
-  "id": "2026-02-01-release",
-  "title": "Nueva versión disponible",
-  "message": "BIOSZEN v1.3.1 ya está publicada.",
+  "id": "20260210-1900-prueba-avisosi",
+  "title": "Prueba de notificación",
+  "message": "Este es un mensaje de prueba para validar que el sistema de avisos funciona correctamente.",
   "url": "https://github.com/bioszen/BIOSZEN/releases",
   "start": "",
   "end": "",
