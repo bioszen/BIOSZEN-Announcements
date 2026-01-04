@@ -1,7 +1,7 @@
 {
-  "id": "20260210-1900-prueba-avisos_final",
-  "title": "Prueba de notificación",
-  "message": "Este es un mensaje de prueba para validar que el sistema de avisos funciona correctamente y para avisar que la version final esta lista.",
+  "id": "20260210-1915-prueba-avisos_v2",
+  "title": "Revisión de la versión final",
+  "message": "Validemos el sistema de avisos con este mensaje actualizado. Si todo se ve bien, liberamos la build final.",
   "url": "https://github.com/bioszen/BIOSZEN/releases",
   "start": "",
   "end": "",
