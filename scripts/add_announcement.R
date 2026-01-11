@@ -1,6 +1,7 @@
 args <- commandArgs(trailingOnly = TRUE)
 message <- NULL
 url_value <- NULL
+title_value <- NULL
 
 i <- 1
 while (i <= length(args)) {
@@ -23,11 +24,24 @@ while (i <= length(args)) {
     i <- i + 1
     next
   }
+  if (grepl("^--title=", arg)) {
+    title_value <- sub("^--title=", "", arg)
+    i <- i + 1
+    next
+  }
   if (arg %in% c("--message", "-m")) {
     if (i == length(args)) {
       stop("Falta valor para --message")
     }
     message <- args[i + 1]
+    i <- i + 2
+    next
+  }
+  if (arg %in% c("--title", "-t")) {
+    if (i == length(args)) {
+      stop("Falta valor para --title")
+    }
+    title_value <- args[i + 1]
     i <- i + 2
     next
   }
@@ -82,7 +96,7 @@ template_lines <- readLines(template_path, warn = FALSE)
 
 make_title <- function(msg, max_len = 60) {
   msg <- trimws(msg)
-  if (!nzchar(msg)) {
+if (!nzchar(msg)) {
     return("Aviso")
   }
   if (nchar(msg) <= max_len) {
@@ -143,7 +157,21 @@ while (new_id %in% existing_ids) {
   counter <- counter + 1
 }
 
-title <- make_title(message)
+if (!is.null(title_value)) {
+  title_value <- gsub("[\r\n]+", " ", trimws(title_value))
+  if (!nzchar(title_value)) {
+    title_value <- NULL
+  }
+}
+if (is.null(title_value)) {
+  title_value <- readline("Titulo (Enter para sugerido): ")
+  title_value <- gsub("[\r\n]+", " ", trimws(title_value))
+  if (!nzchar(title_value)) {
+    title_value <- NULL
+  }
+}
+
+title <- if (is.null(title_value)) make_title(message) else title_value
 
 new_lines <- template_lines
 new_lines <- set_field(new_lines, "id", new_id)
