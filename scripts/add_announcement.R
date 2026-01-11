@@ -60,7 +60,7 @@ if (is.null(message)) {
   message <- readline("Mensaje: ")
 }
 
-message <- gsub("[\r\n]+", " ", trimws(message))
+message <- gsub("[\r\n\t]+", " ", trimws(message))
 if (!nzchar(message)) {
   stop("Mensaje vacio.")
 }
@@ -68,35 +68,11 @@ if (!nzchar(message)) {
 base_dir <- "announcements"
 items_dir <- file.path(base_dir, "items")
 index_path <- file.path(base_dir, "index.dcf")
-
-if (!file.exists(index_path)) {
-  stop("No se encontro announcements/index.dcf")
-}
-if (!dir.exists(items_dir)) {
-  stop("No se encontro announcements/items")
-}
-
-index_lines <- readLines(index_path, warn = FALSE)
-latest_idx <- grep("^latest\\s*:", index_lines)
-if (length(latest_idx) == 0) {
-  stop("announcements/index.dcf no tiene campo latest")
-}
-
-current_latest <- trimws(sub("^latest\\s*:", "", index_lines[latest_idx[1]]))
-if (!nzchar(current_latest)) {
-  stop("announcements/index.dcf tiene latest vacio")
-}
-
-template_path <- file.path(items_dir, paste0(current_latest, ".dcf"))
-if (!file.exists(template_path)) {
-  stop(paste0("Falta el item actual: ", template_path))
-}
-
-template_lines <- readLines(template_path, warn = FALSE)
+latest_json_path <- file.path(base_dir, "latest.json")
 
 make_title <- function(msg, max_len = 60) {
   msg <- trimws(msg)
-if (!nzchar(msg)) {
+  if (!nzchar(msg)) {
     return("Aviso")
   }
   if (nchar(msg) <= max_len) {
@@ -142,13 +118,104 @@ set_field <- function(lines, key, value) {
   lines
 }
 
+get_json_field <- function(lines, key) {
+  idx <- grep(paste0("\"", key, "\"\\s*:"), lines)
+  if (length(idx) == 0) {
+    return(NA_character_)
+  }
+  line <- lines[idx[1]]
+  sub(paste0(".*\"", key, "\"\\s*:\\s*\"([^\"]*)\".*"), "\\1", line)
+}
+
+json_escape <- function(value) {
+  value <- gsub("\\\\", "\\\\\\\\", value)
+  value <- gsub("\"", "\\\\\"", value)
+  value <- gsub("\r", "\\\\r", value)
+  value <- gsub("\n", "\\\\n", value)
+  value <- gsub("\t", "\\\\t", value)
+  value
+}
+
+set_json_field <- function(lines, key, value) {
+  idx <- grep(paste0("\"", key, "\"\\s*:"), lines)
+  if (length(idx) == 0) {
+    stop(paste0("announcements/latest.json no tiene campo ", key))
+  }
+  line <- lines[idx[1]]
+  indent <- sub("^([[:space:]]*).*", "\\1", line)
+  has_comma <- grepl(",\\s*$", line)
+  escaped <- json_escape(value)
+  lines[idx[1]] <- paste0(
+    indent,
+    "\"",
+    key,
+    "\": \"",
+    escaped,
+    "\"",
+    if (has_comma) "," else ""
+  )
+  lines
+}
+
+if (!file.exists(latest_json_path)) {
+  stop("No se encontro announcements/latest.json")
+}
+
+latest_json_lines <- readLines(latest_json_path, warn = FALSE)
+current_latest <- get_json_field(latest_json_lines, "id")
+if (is.na(current_latest) || !nzchar(current_latest)) {
+  stop("announcements/latest.json tiene id vacio")
+}
+
+current_url <- get_json_field(latest_json_lines, "url")
+
+items_available <- dir.exists(items_dir)
+index_available <- file.exists(index_path)
+
+template_lines <- NULL
+template_from_default <- FALSE
+if (items_available) {
+  template_path <- file.path(items_dir, paste0(current_latest, ".dcf"))
+  if (file.exists(template_path)) {
+    template_lines <- readLines(template_path, warn = FALSE)
+  }
+}
+if (is.null(template_lines)) {
+  template_from_default <- TRUE
+  template_lines <- c(
+    "id:",
+    "title:",
+    "message:",
+    "url:",
+    "start:",
+    "end:",
+    "min_version:",
+    "max_version:",
+    "once: true"
+  )
+}
+
+index_lines <- NULL
+latest_idx <- integer(0)
+if (index_available) {
+  index_lines <- readLines(index_path, warn = FALSE)
+  latest_idx <- grep("^latest\\s*:", index_lines)
+  if (length(latest_idx) == 0) {
+    stop("announcements/index.dcf no tiene campo latest")
+  }
+}
+
 start_date <- format(Sys.Date(), "%Y-%m-%d")
 slug <- make_slug(message)
 base_id <- paste(start_date, slug, sep = "-")
 
-existing_ids <- tools::file_path_sans_ext(
-  list.files(items_dir, pattern = "\\.dcf$", full.names = FALSE)
-)
+existing_ids <- character(0)
+if (items_available) {
+  existing_ids <- tools::file_path_sans_ext(
+    list.files(items_dir, pattern = "\\.dcf$", full.names = FALSE)
+  )
+}
+existing_ids <- unique(c(existing_ids, current_latest))
 
 new_id <- base_id
 counter <- 2
@@ -158,14 +225,14 @@ while (new_id %in% existing_ids) {
 }
 
 if (!is.null(title_value)) {
-  title_value <- gsub("[\r\n]+", " ", trimws(title_value))
+  title_value <- gsub("[\r\n\t]+", " ", trimws(title_value))
   if (!nzchar(title_value)) {
     title_value <- NULL
   }
 }
 if (is.null(title_value)) {
   title_value <- readline("Titulo (Enter para sugerido): ")
-  title_value <- gsub("[\r\n]+", " ", trimws(title_value))
+  title_value <- gsub("[\r\n\t]+", " ", trimws(title_value))
   if (!nzchar(title_value)) {
     title_value <- NULL
   }
@@ -179,19 +246,36 @@ new_lines <- set_field(new_lines, "title", title)
 new_lines <- set_field(new_lines, "message", message)
 new_lines <- set_field(new_lines, "start", start_date)
 if (!is.null(url_value)) {
-  url_value <- trimws(url_value)
+  url_value <- gsub("[\r\n\t]+", " ", trimws(url_value))
   new_lines <- set_field(new_lines, "url", url_value)
+} else if (template_from_default && !is.na(current_url) && nzchar(current_url)) {
+  new_lines <- set_field(new_lines, "url", current_url)
 }
 
-new_path <- file.path(items_dir, paste0(new_id, ".dcf"))
-if (file.exists(new_path)) {
-  stop(paste0("Ya existe el item: ", new_path))
+if (items_available) {
+  new_path <- file.path(items_dir, paste0(new_id, ".dcf"))
+  if (file.exists(new_path)) {
+    stop(paste0("Ya existe el item: ", new_path))
+  }
+
+  writeLines(new_lines, new_path, useBytes = TRUE)
+  cat("Nuevo item:", new_path, "\n")
+} else {
+  cat("Sin items/: se omitio el item DCF.\n")
 }
 
-writeLines(new_lines, new_path, useBytes = TRUE)
+if (index_available) {
+  index_lines[latest_idx[1]] <- paste0("latest: ", new_id)
+  writeLines(index_lines, index_path, useBytes = TRUE)
+  cat("Index actualizado:", index_path, "\n")
+}
 
-index_lines[latest_idx[1]] <- paste0("latest: ", new_id)
-writeLines(index_lines, index_path, useBytes = TRUE)
-
-cat("Nuevo item:", new_path, "\n")
-cat("Index actualizado:", index_path, "\n")
+latest_json_lines <- set_json_field(latest_json_lines, "id", new_id)
+latest_json_lines <- set_json_field(latest_json_lines, "title", title)
+latest_json_lines <- set_json_field(latest_json_lines, "message", message)
+latest_json_lines <- set_json_field(latest_json_lines, "start", start_date)
+if (!is.null(url_value)) {
+  latest_json_lines <- set_json_field(latest_json_lines, "url", url_value)
+}
+writeLines(latest_json_lines, latest_json_path, useBytes = TRUE)
+cat("Latest actualizado:", latest_json_path, "\n")
