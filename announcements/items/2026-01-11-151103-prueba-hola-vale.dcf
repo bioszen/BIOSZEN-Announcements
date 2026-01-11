@@ -1,0 +1,9 @@
+id: 2026-01-11-151103-prueba-hola-vale
+title: Final tests3
+message: Prueba, hola Vale
+url: https://ejemplo.com
+start: 2026-01-11
+end:
+min_version:
+max_version:
+once: true

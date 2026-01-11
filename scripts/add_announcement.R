@@ -2,6 +2,10 @@ args <- commandArgs(trailingOnly = TRUE)
 message <- NULL
 url_value <- NULL
 title_value <- NULL
+end_value <- NULL
+min_version_value <- NULL
+max_version_value <- NULL
+enabled_value <- NULL
 
 i <- 1
 while (i <= length(args)) {
@@ -29,6 +33,26 @@ while (i <= length(args)) {
     i <- i + 1
     next
   }
+  if (grepl("^--end=", arg)) {
+    end_value <- sub("^--end=", "", arg)
+    i <- i + 1
+    next
+  }
+  if (grepl("^--min-version=", arg)) {
+    min_version_value <- sub("^--min-version=", "", arg)
+    i <- i + 1
+    next
+  }
+  if (grepl("^--max-version=", arg)) {
+    max_version_value <- sub("^--max-version=", "", arg)
+    i <- i + 1
+    next
+  }
+  if (grepl("^--enabled=", arg)) {
+    enabled_value <- sub("^--enabled=", "", arg)
+    i <- i + 1
+    next
+  }
   if (arg %in% c("--message", "-m")) {
     if (i == length(args)) {
       stop("Falta valor para --message")
@@ -43,6 +67,45 @@ while (i <= length(args)) {
     }
     title_value <- args[i + 1]
     i <- i + 2
+    next
+  }
+  if (arg == "--end") {
+    if (i == length(args)) {
+      stop("Falta valor para --end")
+    }
+    end_value <- args[i + 1]
+    i <- i + 2
+    next
+  }
+  if (arg == "--min-version") {
+    if (i == length(args)) {
+      stop("Falta valor para --min-version")
+    }
+    min_version_value <- args[i + 1]
+    i <- i + 2
+    next
+  }
+  if (arg == "--max-version") {
+    if (i == length(args)) {
+      stop("Falta valor para --max-version")
+    }
+    max_version_value <- args[i + 1]
+    i <- i + 2
+    next
+  }
+  if (arg == "--enabled") {
+    if (i < length(args) && !startsWith(args[i + 1], "-")) {
+      enabled_value <- args[i + 1]
+      i <- i + 2
+    } else {
+      enabled_value <- "true"
+      i <- i + 1
+    }
+    next
+  }
+  if (arg == "--disabled") {
+    enabled_value <- "false"
+    i <- i + 1
     next
   }
   if (startsWith(arg, "-")) {
@@ -136,6 +199,16 @@ json_escape <- function(value) {
   value
 }
 
+normalize_bool <- function(value) {
+  if (is.null(value)) {
+    return(NULL)
+  }
+  raw <- tolower(trimws(as.character(value)))
+  if (raw %in% c("true", "1", "yes", "y")) return("true")
+  if (raw %in% c("false", "0", "no", "n")) return("false")
+  stop(paste0("Valor invalido para enabled: ", value))
+}
+
 set_json_field <- function(lines, key, value) {
   idx <- grep(paste0("\"", key, "\"\\s*:"), lines)
   if (length(idx) == 0) {
@@ -152,6 +225,25 @@ set_json_field <- function(lines, key, value) {
     "\": \"",
     escaped,
     "\"",
+    if (has_comma) "," else ""
+  )
+  lines
+}
+
+set_json_scalar_field <- function(lines, key, value) {
+  idx <- grep(paste0("\"", key, "\"\\s*:"), lines)
+  if (length(idx) == 0) {
+    stop(paste0("announcements/latest.json no tiene campo ", key))
+  }
+  line <- lines[idx[1]]
+  indent <- sub("^([[:space:]]*).*", "\\1", line)
+  has_comma <- grepl(",\\s*$", line)
+  lines[idx[1]] <- paste0(
+    indent,
+    "\"",
+    key,
+    "\": ",
+    value,
     if (has_comma) "," else ""
   )
   lines
@@ -206,8 +298,9 @@ if (index_available) {
 }
 
 start_date <- format(Sys.Date(), "%Y-%m-%d")
+time_stamp <- format(Sys.time(), "%H%M%S")
 slug <- make_slug(message)
-base_id <- paste(start_date, slug, sep = "-")
+base_id <- paste(start_date, time_stamp, slug, sep = "-")
 
 existing_ids <- character(0)
 if (items_available) {
@@ -240,11 +333,19 @@ if (is.null(title_value)) {
 
 title <- if (is.null(title_value)) make_title(message) else title_value
 
+end_value <- if (is.null(end_value)) "" else gsub("[\r\n\t]+", " ", trimws(end_value))
+min_version_value <- if (is.null(min_version_value)) "" else gsub("[\r\n\t]+", " ", trimws(min_version_value))
+max_version_value <- if (is.null(max_version_value)) "" else gsub("[\r\n\t]+", " ", trimws(max_version_value))
+enabled_value <- normalize_bool(if (is.null(enabled_value)) "true" else enabled_value)
+
 new_lines <- template_lines
 new_lines <- set_field(new_lines, "id", new_id)
 new_lines <- set_field(new_lines, "title", title)
 new_lines <- set_field(new_lines, "message", message)
 new_lines <- set_field(new_lines, "start", start_date)
+new_lines <- set_field(new_lines, "end", end_value)
+new_lines <- set_field(new_lines, "min_version", min_version_value)
+new_lines <- set_field(new_lines, "max_version", max_version_value)
 if (!is.null(url_value)) {
   url_value <- gsub("[\r\n\t]+", " ", trimws(url_value))
   new_lines <- set_field(new_lines, "url", url_value)
@@ -274,8 +375,12 @@ latest_json_lines <- set_json_field(latest_json_lines, "id", new_id)
 latest_json_lines <- set_json_field(latest_json_lines, "title", title)
 latest_json_lines <- set_json_field(latest_json_lines, "message", message)
 latest_json_lines <- set_json_field(latest_json_lines, "start", start_date)
+latest_json_lines <- set_json_field(latest_json_lines, "end", end_value)
+latest_json_lines <- set_json_field(latest_json_lines, "min_version", min_version_value)
+latest_json_lines <- set_json_field(latest_json_lines, "max_version", max_version_value)
 if (!is.null(url_value)) {
   latest_json_lines <- set_json_field(latest_json_lines, "url", url_value)
 }
+latest_json_lines <- set_json_scalar_field(latest_json_lines, "enabled", enabled_value)
 writeLines(latest_json_lines, latest_json_path, useBytes = TRUE)
 cat("Latest actualizado:", latest_json_path, "\n")
