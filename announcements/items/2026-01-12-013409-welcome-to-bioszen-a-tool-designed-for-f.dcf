@@ -1,0 +1,9 @@
+id: 2026-01-12-013409-welcome-to-bioszen-a-tool-designed-for-f
+title: WELCOME
+message: Welcome to BIOSZEN, a tool designed for fast and reproducible data analysis.
+url: https://github.com/bioszen/BIOSZEN
+start: 2026-01-12
+end:
+min_version:
+max_version:
+once: true
