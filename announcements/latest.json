@@ -1,11 +1,11 @@
 {
-  "id": "2026-01-12-013409-welcome-to-bioszen-a-tool-designed-for-f",
-  "title": "WELCOME",
-  "message": "Welcome to BIOSZEN, a tool designed for fast and reproducible data analysis.",
-  "url": "https://github.com/bioszen/BIOSZEN",
-  "start": "2026-01-12",
-  "end": "",
-  "min_version": "",
-  "max_version": "",
-  "enabled": true
+    "id":  "2026-04-21-204750-bioszen-2-0-1-available",
+    "title":  "BIOSZEN 2.0.1 Available",
+    "message":  "BIOSZEN 2.0.1 is now available with bug fixes, new visualizations, and expanded analyses and processing workflows.",
+    "url":  "https://zenodo.org/records/18270931",
+    "start":  "2026-04-21",
+    "end":  "",
+    "min_version":  "",
+    "max_version":  "",
+    "enabled":  true
 }
