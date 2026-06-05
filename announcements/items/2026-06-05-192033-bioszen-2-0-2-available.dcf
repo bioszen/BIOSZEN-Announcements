@@ -1,4 +1,4 @@
-id: 2026-06-05-bioszen-2-0-2-available
+id: 2026-06-05-192033-bioszen-2-0-2-available
 title: BIOSZEN 2.0.2 Available
 message: BIOSZEN 2.0.2 improves stability, especially growth curve parameter extraction, and includes a repository skill for AI-assisted data organization and app-compatible file preparation.
 url: https://zenodo.org/records/20563565
@@ -7,4 +7,3 @@ end:
 min_version:
 max_version:
 once: true
-
