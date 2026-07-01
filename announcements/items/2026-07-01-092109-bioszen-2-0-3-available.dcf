@@ -1,0 +1,10 @@
+id: 2026-07-01-092109-bioszen-2-0-3-available
+title: BIOSZEN 2.0.3 Available
+message: BIOSZEN 2.0.3 improves overall stability, corrects issues across the app, enhances growth curve parameter extraction, and adds more flexible options for downloading results.
+url: https://zenodo.org/records/21093971
+start: 2026-07-01
+end:
+min_version:
+max_version:
+once: true
+
