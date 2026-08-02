@@ -1,9 +1,9 @@
 {
-    "id":  "2026-08-01-000124-bioszen-2-1-0-available",
-    "title":  "BIOSZEN 2.1.0 Available",
-    "message":  "BIOSZEN 2.1.0 improves stability, adds editable PowerPoint graphic downloads, and is now available from R-universe. Install it from the link below, then launch it from RStudio Addins or with BIOSZEN:::BIOSZEN().",
+    "id":  "2026-08-02-161001-bioszen-2-1-1-available",
+    "title":  "BIOSZEN 2.1.1 Available",
+    "message":  "BIOSZEN 2.1.1 improves stability, adds editable PowerPoint graphic downloads, and is now available from R-universe. Use the instructions at the link below to install it, then launch it from RStudio Addins or with BIOSZEN:::BIOSZEN().",
     "url":  "https://bioszen.r-universe.dev/BIOSZEN",
-    "start":  "2026-08-01",
+    "start":  "2026-08-02",
     "end":  "",
     "min_version":  "",
     "max_version":  "",
